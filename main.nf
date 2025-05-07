@@ -96,11 +96,9 @@ workflow {
 
     lineageDataset = bestLineageDataset(lineage, buscoLineageDatasets, params.lineageMappingFile)
 
-    genome_ch = channel.fromPath( params.input + "/" + params.genomeFileName)
-    genome(genome_ch, lineageDataset)
+    genome(params.genomeFile, lineageDataset)
 
     if(!params.skipProteomeAnalysis) {
-        protein_ch = channel.fromPath( params.input + "/" + params.proteinFileName)
-        protein(protein_ch, lineageDataset)
+        protein(params.proteinFile, lineageDataset)
     }
 }
