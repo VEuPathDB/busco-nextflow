@@ -3,22 +3,28 @@
 use strict;
 
 use Getopt::Long;
-use Data::Dumper;
 
-my ($lineage, $buscoLineageDatasets, $outFile);
+my ($lineage, $buscoLineageDatasets, $outFile, $lineageMappersFile);
 &GetOptions(
     "lineage=s" => \$lineage,
     "outFile=s" => \$outFile,
-    "busco_lineages=s" => \$buscoLineageDatasets
+    "busco_lineages=s" => \$buscoLineageDatasets,
+    "lineage_mappers=s" => \$lineageMappersFile
     );
 
+
+open(MAP, $lineageMappersFile) or die "Cannot open $lineageMappersFile for reading: $!";
+
 my %overrides;
-while(<DATA>) {
+while(<MAP>) {
     chomp;
     next if/^#/;
-    my ($taxon, $lineageDatasetOverride) = split(/,/, $_);
+    my ($taxon, $lineageDatasetOverride) = split(/\t/, $_);
     $overrides{$taxon} = $lineageDatasetOverride;
 }
+
+close MAP;
+
 
 my %buscoDatasets;
 
@@ -47,7 +53,6 @@ close FILE;
 
 my $chosen;
 foreach my $taxon (reverse @taxa) {
-    print $taxon . "\n";
 
     if($overrides{$taxon}) {
         $chosen = $overrides{$taxon};
@@ -69,7 +74,3 @@ print OUT $chosen, "\n";
 
 close OUT;
 
-__DATA__
-# here we can list special cases
-someTaxon,someLineageDataset
-someOtherTaxon,someOtherLineageDataset
