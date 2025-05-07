@@ -2,8 +2,6 @@
 
 nextflow.enable.dsl = 2
 
-genome_ch = channel.fromPath( params.input + "/" + params.genomeFileName)
-protein_ch = channel.fromPath( params.input + "/" + params.proteinFileName)
 
 process lineageFromTaxon {
   container = 'veupathdb/edirect:1.0.0'
@@ -97,8 +95,12 @@ workflow {
     buscoLineageDatasets = buscoLineageDatasets()
 
     lineageDataset = bestLineageDataset(lineage, buscoLineageDatasets, params.lineageMappingFile)
-    
-    genome(genome_ch, lineageDataset)
-    protein(protein_ch, lineageDataset)
-}
 
+    genome_ch = channel.fromPath( params.input + "/" + params.genomeFileName)
+    genome(genome_ch, lineageDataset)
+
+    if(!params.skipProteomeAnalysis) {
+        protein_ch = channel.fromPath( params.input + "/" + params.proteinFileName)
+        protein(protein_ch, lineageDataset)
+    }
+}
