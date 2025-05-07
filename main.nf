@@ -14,7 +14,12 @@ process lineageFromTaxon {
   script:
     """
     efetch -db taxonomy -id $taxonId -format xml \
-    | xtract -pattern Taxon -block LineageEx -sep "\n" -element ScientificName >taxa.txt
+        | xtract -pattern Taxon -block LineageEx -sep "\n" -element ScientificName >taxa.txt
+
+    # if above didn't return anything ... we can use the specified tax id for downstream mapping
+    if [ ! -s "taxa.txt" ]; then
+        echo $taxonId >taxa.txt
+    fi
     """
 }
 
