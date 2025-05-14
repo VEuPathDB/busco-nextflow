@@ -51,7 +51,7 @@ process genome {
     script:
     """
     ld=\$(< $lineageDataset)
-    busco -i $fasta -o busco_output -l \$ld -m genome -c 4 --offline --download_path /busco_downloads
+    busco -i $fasta -o busco_output -l \$ld -m genome -c 10 --offline --download_path /busco_downloads
     ln -s busco_output/*.txt busco_genome.txt
     """
 }
@@ -72,7 +72,7 @@ process protein {
     script:
     """
     ld=\$(< $lineageDataset)
-    busco -i $fasta -o busco_output -l \$ld -m proteins -c 4  --offline --download_path /busco_downloads
+    busco -i $fasta -o busco_output -l \$ld -m proteins -c 10  --offline --download_path /busco_downloads
     ln -s busco_output/*.txt busco_protein.txt
     """
 }
