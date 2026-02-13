@@ -4,7 +4,7 @@ nextflow.enable.dsl = 2
 
 
 process lineageFromTaxon {
-  container = 'veupathdb/edirect:1.0.0'
+  container 'veupathdb/edirect:1.0.0'
   input:
     val taxonId
 
