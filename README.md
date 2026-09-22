@@ -10,7 +10,8 @@ This pipeline assesses genome (and, optionally, protein-set) completeness by sco
 
 - [Nextflow](https://www.nextflow.io/) (DSL2)
 - Docker or Singularity/Apptainer — processes run in the `veupathdb/edirect:1.0.0`, `ezlabgva/busco:v5.8.2_cv1`, and `perl:bookworm` container images (select the engine via the `docker` or `singularity` profile/config in `conf/`)
-- Network access (or a pre-populated local cache) for NCBI E-utilities lookups and for BUSCO's offline lineage dataset download path
+- Network access for NCBI E-utilities lookups
+- A pre-populated BUSCO downloads cache (`buscoDownloadsDir/lineages/<name>_odbN[.N]`) containing every lineage the pipeline may select; see `tests/` for chooser behavior (`prove tests/`)
 
 ## Usage
 
@@ -27,8 +28,8 @@ nextflow run VEuPathDB/busco-nextflow -r main \
 The pipeline has a single (default) entry point:
 
 1. `lineageFromTaxon` fetches the NCBI taxonomic lineage for `params.ncbiTaxId` using EDirect (`efetch`/`xtract`).
-2. `buscoLineageDatasets` lists the BUSCO lineage datasets available in the container.
-3. `bestLineageDataset` (via `bin/chooseLineage.pl`) walks the taxonomic lineage from most to least specific and picks the first rank with either an override in `lineage_dataset_map.txt` or a matching BUSCO dataset name.
+2. The workflow lists the lineage datasets present in `${buscoDownloadsDir}/lineages`. BUSCO runs `--offline`, so only cached datasets are candidates.
+3. `bestLineageDataset` (via `bin/chooseLineage.pl`) walks the taxonomic lineage from most to least specific and picks the first rank with either an override in `lineage_dataset_map.txt` or a matching cached dataset. When several versions of a lineage are cached (e.g. `_odb12` and `_odb12.2`), the highest is used.
 4. `genome` runs `busco -m genome` against `params.genomeFile` using the chosen lineage dataset.
 5. `protein` runs `busco -m proteins` against `params.proteinFile`, unless `params.skipProteomeAnalysis` is `true`.
 
@@ -40,8 +41,8 @@ The pipeline has a single (default) entry point:
 | `genomeFile` | `input/PlasmoDB-68_Pfalciparum3D7_Genome.fasta` | Genome assembly FASTA to run BUSCO against in genome mode |
 | `proteinFile` | `input/PlasmoDB-68_Pfalciparum3D7_AnnotatedProteins.fasta` | Annotated protein FASTA to run BUSCO against in protein mode |
 | `skipProteomeAnalysis` | `false` | Skip the protein-mode BUSCO run and only assess the genome |
-| `lineageMappingFile` | `lineage_dataset_map.txt` | Tab-delimited file mapping lowercase taxon names to BUSCO lineage dataset overrides, used when a taxon has no directly matching BUSCO dataset name |
-| `buscoDownloadsDir` | `busco_downloads` | Local path BUSCO uses for its offline lineage dataset downloads |
+| `lineageMappingFile` | `lineage_dataset_map.txt` | Tab-delimited file mapping lowercase taxon names to BUSCO lineage names (no `_odb` version; it is resolved from the cache), used when a taxon has no directly matching dataset. An override pointing at an uncached lineage fails the run |
+| `buscoDownloadsDir` | `busco_downloads` | Local BUSCO downloads cache; its `lineages/` subdirectory is the source of truth for dataset selection |
 | `outDir` | `results` | Directory the BUSCO summary output files are published to |
 
 ## Output
