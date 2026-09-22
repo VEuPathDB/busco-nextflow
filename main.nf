@@ -23,19 +23,6 @@ process lineageFromTaxon {
     """
 }
 
-process buscoLineageDatasets {
-    container "ezlabgva/busco:v5.8.2_cv1"
-
-    output:
-    path("lineage_datasets.txt")
-
-    script:
-    """
-    busco --list-datasets  >lineage_datasets.txt
-    """
-}
-
-
 process genome {
     container "ezlabgva/busco:v5.8.2_cv1"
 
@@ -83,7 +70,7 @@ process bestLineageDataset {
 
     input:
     path(lineage)
-    path(buscoLineageDatasets)
+    path(cachedLineages)
     path(lineageMappingFile)
 
     output:
@@ -91,15 +78,19 @@ process bestLineageDataset {
 
     script:
     """
-    chooseLineage.pl --busco_lineages $buscoLineageDatasets --lineage $lineage --outFile best_lineage_dataset.txt --lineage_mappers $lineageMappingFile
+    chooseLineage.pl --cached_lineages $cachedLineages --lineage $lineage --outFile best_lineage_dataset.txt --lineage_mappers $lineageMappingFile
     """
 }
 
 workflow {
     lineage = lineageFromTaxon(params.ncbiTaxId)
-    buscoLineageDatasets = buscoLineageDatasets()
 
-    lineageDataset = bestLineageDataset(lineage, buscoLineageDatasets, params.lineageMappingFile)
+    // BUSCO runs --offline, so only datasets present in the local cache are candidates
+    lineagesDir = file("${params.buscoDownloadsDir}/lineages", checkIfExists: true)
+    cachedLineages = Channel.of(lineagesDir.listFiles().findAll { it.isDirectory() }*.name.sort().join("\n") + "\n")
+        .collectFile(name: 'cached_lineages.txt')
+
+    lineageDataset = bestLineageDataset(lineage, cachedLineages, params.lineageMappingFile)
 
     genome(params.genomeFile, lineageDataset)
 
